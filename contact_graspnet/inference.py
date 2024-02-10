@@ -76,6 +76,14 @@ def inference(global_config, checkpoint_dir, input_paths, K=None, local_regions=
         np.savez('results/predictions_{}'.format(os.path.basename(p.replace('png','npz').replace('npy','npz'))), 
                   pred_grasps_cam=pred_grasps_cam, scores=scores, contact_pts=contact_pts)
 
+        # Top n grasps for each object
+        n = FLAGS.n
+        for k, v in scores.items():
+            if len(v) > n:
+                top_idx = np.argsort(v)[-n:][::-1]
+                scores[k] = v[top_idx]
+                pred_grasps_cam[k] = pred_grasps_cam[k][top_idx]
+        
         # Visualize results          
         show_image(rgb, segmap)
         visualize_grasps(pc_full, pred_grasps_cam, scores, plot_opencv_cam=True, pc_colors=pc_colors)
@@ -97,6 +105,7 @@ if __name__ == "__main__":
     parser.add_argument('--forward_passes', type=int, default=1,  help='Run multiple parallel forward passes to mesh_utils more potential contact points.')
     parser.add_argument('--segmap_id', type=int, default=0,  help='Only return grasps of the given object id')
     parser.add_argument('--arg_configs', nargs="*", type=str, default=[], help='overwrite config parameters')
+    parser.add_argument('--n', type=int, default=5, help='Number of grasps to return per object')
     FLAGS = parser.parse_args()
 
     global_config = config_utils.load_config(FLAGS.ckpt_dir, batch_size=FLAGS.forward_passes, arg_configs=FLAGS.arg_configs)

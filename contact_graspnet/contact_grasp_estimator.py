@@ -356,12 +356,23 @@ class GraspEstimator:
             
         # Convert to pc 
         pc_full, pc_colors = depth2pc(depth, K, rgb)
+        # print('pc from extract after d2pc')
+        # print(pc_full)
+        # print('pc col from extract after d2pc')
+        # print(pc_colors)
 
         # Threshold distance
         if pc_colors is not None:
             pc_colors = pc_colors[(pc_full[:,2] < z_range[1]) & (pc_full[:,2] > z_range[0])] 
+            # print('pc colors from threshold')
+            # print(pc_colors)
+            # print('pc :2 full from threshold')
+            # print(pc_full[:,2])
+
         pc_full = pc_full[(pc_full[:,2] < z_range[1]) & (pc_full[:,2] > z_range[0])]
-        
+        # print('pc full from threshold')
+        # print(pc_full)
+
         # Extract instance point clouds from segmap and depth map
         pc_segments = {}
         if segmap is not None:
@@ -376,6 +387,11 @@ class GraspEstimator:
                 inst_mask = segmap==i
                 pc_segment,_ = depth2pc(depth*inst_mask, K)
                 pc_segments[i] = pc_segment[(pc_segment[:,2] < z_range[1]) & (pc_segment[:,2] > z_range[0])] #regularize_pc_point_count(pc_segment, grasp_estimator._contact_grasp_cfg['DATA']['num_point'])
+
+        # print('pc from extract')
+        # print(pc_full)
+        # print(pc_segments)
+        # print(pc_colors)
 
         return pc_full, pc_segments, pc_colors
         

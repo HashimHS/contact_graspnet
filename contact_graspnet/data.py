@@ -70,6 +70,7 @@ def preprocess_pc_for_inference(input_pc, num_point, pc_mean=None, return_mean=F
     Returns:
         [np.ndarray] -- num_pointx3 preprocessed point cloud
     """
+
     normalize_pc_count = input_pc.shape[0] != num_point
     if normalize_pc_count:
         pc = regularize_pc_point_count(input_pc, num_point, use_farthest_point=use_farthest_point).copy()
@@ -197,7 +198,11 @@ def regularize_pc_point_count(pc, npoints, use_farthest_point=False):
       :param use_farthest_point: use farthest point sampling to downsample the points, runs slower.
       :returns: npointsx3 regularized point cloud
     """
-    
+    # print('regul')
+    # print(pc)
+    # print(pc.shape)
+    # print(npoints)
+
     if pc.shape[0] > npoints:
         if use_farthest_point:
             _, center_indexes = farthest_points(pc, npoints, distance_by_translation_point, return_center_indexes=True)
@@ -209,6 +214,12 @@ def regularize_pc_point_count(pc, npoints, use_farthest_point=False):
         if required > 0:
             index = np.random.choice(range(pc.shape[0]), size=required)
             pc = np.concatenate((pc, pc[index, :]), axis=0)
+
+    # print('regul after')
+    # print(pc)
+    # print(pc.shape)
+    # print(npoints)
+
     return pc
 
 def depth2pc(depth, K, rgb=None):
@@ -222,17 +233,39 @@ def depth2pc(depth, K, rgb=None):
     mask = np.where(depth > 0)
     x,y = mask[1], mask[0]
     
+
     normalized_x = (x.astype(np.float32) - K[0,2])
     normalized_y = (y.astype(np.float32) - K[1,2])
 
     world_x = normalized_x * depth[y, x] / K[0,0]
     world_y = normalized_y * depth[y, x] / K[1,1]
     world_z = depth[y, x]
+    # print('K[0 2]')
+    # print(K[0,2])
+    # print('K[1 2]')
+    # print(K[1,2])
+    # print('K[0 0]')
+    # print(K[0,0])
+    # print('K[1 1]')
+    # print(K[1,1])
+    # print('mask')
+    # print(mask)
+    # print('normalized_x')
+    # print(normalized_x)
+    # print('world_x')
+    # print(world_x)
+    # print('world_z')
+    # print(world_z)
+    
+    # print(rgb)
 
     if rgb is not None:
         rgb = rgb[y,x,:]
         
     pc = np.vstack((world_x, world_y, world_z)).T
+    # print('d2pc')
+    # print(pc)
+    # print(pc.shape)
     return (pc, rgb)
 
 
@@ -305,7 +338,11 @@ def load_available_input_data(p, K=None):
     if K is not None:
         if isinstance(K,str):
             cam_K = eval(K)
-        cam_K = np.array(K).reshape(3,3)
+            print(cam_K)
+            print(K)
+        cam_K = np.reshape(cam_K,(3,3)) # cam_K = np.array(K).reshape(3,3) was, but I have corrected
+        print(cam_K)
+
 
     if '.np' in p:
         data = np.load(p, allow_pickle=True)

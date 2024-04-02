@@ -42,3 +42,4 @@ test_data/food_box_1_4_105_mask.png
 test_data/food_box_1_4_105.png
 test_data/image.npy
 test_data/test.png
+pointnet2/tf_ops/sampling/*

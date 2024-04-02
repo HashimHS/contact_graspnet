@@ -208,7 +208,8 @@ def build_6d_grasp(approach_dirs, base_dirs, contact_pts, thickness, use_tf=Fals
         np.ndarray -- Nx4x4 grasp poses in camera coordinates
     """
     if use_tf:
-        grasps_R = tf.stack([base_dirs, tf.linalg.cross(approach_dirs,base_dirs),approach_dirs], axis=3)        
+        # grasps_R = tf.stack([base_dirs, tf.linalg.cross(approach_dirs,base_dirs),approach_dirs], axis=3)  
+        grasps_R = tf.stack([-base_dirs, tf.linalg.cross(base_dirs,approach_dirs),approach_dirs], axis=3)   # Swaped order and a and b vector
         grasps_t = contact_pts + tf.expand_dims(thickness,2)/2 * base_dirs - gripper_depth * approach_dirs
         ones = tf.ones((contact_pts.shape[0], contact_pts.shape[1], 1, 1), dtype=tf.float32)
         zeros = tf.zeros((contact_pts.shape[0], contact_pts.shape[1], 1, 3), dtype=tf.float32)

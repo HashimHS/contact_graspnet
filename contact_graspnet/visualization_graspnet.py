@@ -30,11 +30,13 @@ if __name__ == "__main__":
             # top_idx = [0]
             scores[k] = v[top_idx]
             pred_grasps_cam[k] = pred_grasps_cam[k][top_idx]
+            contact_pts[k] = contact_pts[k][top_idx]
 
-        grasp_idx = 1
-    for k in scores.keys():
-        pred_grasps_cam[k] = [pred_grasps_cam[k][grasp_idx-1]]
-        scores[k] = [scores[k][grasp_idx-1]]
+    # grasp_idx = 1
+    # for k in scores.keys():
+    #     pred_grasps_cam[k] = [pred_grasps_cam[k][grasp_idx-1]]
+    #     scores[k] = [scores[k][grasp_idx-1]]
+    #     contact_pts[k] = [contact_pts[k][grasp_idx-1]]
 
     # Visualize results
     show_image(rgb, segmap)

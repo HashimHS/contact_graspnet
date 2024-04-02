@@ -9,7 +9,9 @@
   <arg name="skip_border_objects" default="False" doc="When extracting local_regions, ignore segments at depth map boundary." />
   <arg name="forward_passes" default="1" doc="Run multiple parallel forward passes to mesh_utils more potential contact points." />
   <arg name="segmap_id" default="0" doc="Only return grasps of the given object id" />
-  <arg name="n" default="3" doc="Number of grasps to return per object" />
+  <arg name="n" default="0" doc="Number of grasps to return per object" />
+  <arg name="save_path" default="./" doc="Path to save the results" />
+  <arg name="mem_limit" default="0.1" doc="Memory fraction limit for tf session" />
   
 
   <!-- Run Contact-GraspNet -->
@@ -23,6 +25,8 @@
       <param name="forward_passes" type="int" value="$(arg forward_passes)" />
       <param name="segmap_id" type="int" value="$(arg segmap_id)" />
       <param name="n" type="int" value="$(arg n)" />
+      <param name="save_path" type="str" value="$(arg save_path)" />
+      <param name="mem_limit" type="double" value="$(arg mem_limit)" />
 
 
 

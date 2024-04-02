@@ -84,7 +84,8 @@ def imgmsg_to_cv2(img_msg):
 
 
 class GraspPlannerServer(object):
-    def __init__(self, global_config, checkpoint_dir, local_regions=True, skip_border_objects=False, filter_grasps=True, segmap_id=None, z_range=[0.2,1.8], forward_passes=1, n=10):
+    def __init__(self, global_config, checkpoint_dir, local_regions=True, skip_border_objects=False, filter_grasps=True, segmap_id=None,
+                 z_range=[0.2,1.8], forward_passes=1, n=10, save_path="./", mem_limit=0.1):
         # get parameters
         self.local_regions = local_regions
         self.skip_border_objects = skip_border_objects
@@ -93,6 +94,14 @@ class GraspPlannerServer(object):
         self.z_range = z_range
         self.forward_passes = forward_passes
         self.n = n
+        self.save_path = save_path
+
+        # find trial number
+        self.trial = 1
+        path = os.path.join(self.save_path, 'trial_{}.npy'.format(self.trial))
+        while os.path.exists(path):
+            self.trial += 1
+            path = os.path.join(self.save_path, 'trial_{}.npy'.format(self.trial))
 
         # Build the model
         self.grasp_estimator = GraspEstimator(global_config)
@@ -102,7 +111,7 @@ class GraspPlannerServer(object):
         saver = tf.train.Saver(save_relative_paths=True)
 
         # Create a session
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=mem_limit)
         config = tf.ConfigProto(gpu_options=gpu_options)
         config.gpu_options.allow_growth = True
         config.allow_soft_placement = True
@@ -133,6 +142,7 @@ class GraspPlannerServer(object):
 
         # unpack request massage
         color_im, depth_im, segmask, camera_intr = self.read_images(req)
+        color_im = cv2.cvtColor(color_im, cv2.COLOR_BGR2RGB)
         # print(segmask)
         # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         # print(np.size(segmask))
@@ -186,6 +196,14 @@ class GraspPlannerServer(object):
                     top_idx = np.argsort(v)[-self.n:][::-1]
                     scores[k] = v[top_idx]
                     pred_grasps_cam[k] = pred_grasps_cam[k][top_idx]
+                    contact_pts[k] = contact_pts[k][top_idx]
+        else:
+            rospy.loginfo('Sorting grasps')
+            for k, v in scores.items():
+                top_idx = np.argsort(v)[::-1]
+                scores[k] = v[top_idx]
+                pred_grasps_cam[k] = pred_grasps_cam[k][top_idx]
+                contact_pts[k] = contact_pts[k][top_idx]
 
         # Generate grasp responce msg
         grasp_resp = ContactGraspNetPlannerResponse()
@@ -207,8 +225,11 @@ class GraspPlannerServer(object):
         result['rgb'] = color_im
         result['depth'] = depth_im
         result['segmap'] = segmask
-        np.save('trial.npy', result)
-        rospy.loginfo("result saved to trial.npy")
+        filename = 'trial_{}.npy'.format(self.trial)
+        path = os.path.join(self.save_path, filename)
+        np.save(path, result)
+        self.trial += 1
+        rospy.loginfo("result saved to {}".format(path))
         rospy.loginfo("Done")
 
         return grasp_resp
@@ -266,9 +287,9 @@ class GraspPlannerServer(object):
             rospy.logerr(e)
 
         # Save sample images
-        cv2.imwrite('~/color.png', color_im)
-        cv2.imwrite('~/depth.png', depth_im)
-        cv2.imwrite('~/segmask.png', segmask)
+        # cv2.imwrite('~/color.png', color_im)
+        # cv2.imwrite('~/depth.png', depth_im)
+        # cv2.imwrite('~/segmask.png', segmask)
 
         return (color_im, depth_im, segmask, camera_intr)
 
@@ -316,6 +337,8 @@ if __name__ == "__main__":
     forward_passes = rospy.get_param('~forward_passes')  # type=int, default=1,  help='Run multiple parallel forward passes to mesh_utils more potential contact points.')
     segmap_id = rospy.get_param('~segmap_id')  # type=int, default=0,  help='Only return grasps of the given object id')
     n = rospy.get_param('~n')  # type=int, default=1,  help='Number of grasps to return per object')
+    save_path = rospy.get_param('~save_path')  # type=str, default=None,  help='Path to save the result')
+    mem_limit = rospy.get_param('~mem_limit')  # type=int, default=0,  help='Memory fraction limit for tf session')
     # arg_configs = rospy.get_param('~arg_configs')  # nargs="*", type=str, default=[], help='overwrite config parameters')
     arg_configs = []
 
@@ -339,5 +362,7 @@ if __name__ == "__main__":
         segmap_id=segmap_id,
         z_range=z_range,
         forward_passes=forward_passes,
-        n=n)
+        n=n,
+        save_path=save_path,
+        mem_limit=mem_limit)
     rospy.spin()
